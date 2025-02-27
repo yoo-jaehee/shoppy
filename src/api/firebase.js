@@ -6,6 +6,7 @@ import {
   signOut,
   onAuthStateChanged,
 } from "firebase/auth";
+import { getDatabase, ref, onValue, get } from "firebase/database";
 
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_APP_FIREBASE_API_KEY,
@@ -17,7 +18,7 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const auth = getAuth();
 const provider = new GoogleAuthProvider();
-
+const database = getDatabase(app);
 export function login() {
   signInWithPopup(auth, provider).catch(console.error);
 }
@@ -27,9 +28,27 @@ export function logout() {
 }
 
 //✅ auth(인증 정보)의 상태가 바뀔 때 마다 callback 함수 실행
+
+//1. 사용자가 있는 경우(로그인 한 경우
 export function onUserStateChange(callback) {
-  onAuthStateChanged(auth, (user) => {
-    callback(user);
+  onAuthStateChanged(auth, async (user) => {
+    const updatedUser = user ? await adminUser(user) : null;
+
+    callback(updatedUser);
+  });
+}
+
+//2. 사용자가 어드민 권한을 가지고 있는지 확인
+//3. {...user, isAdmin: true/false}
+
+async function adminUser(user) {
+  return get(ref(database, "admins")).then((snapshot) => {
+    if (snapshot.exists()) {
+      const admins = snapshot.val();
+      const isAdmin = admins.includes(user.uid);
+      return { ...user, isAdmin };
+    }
+    return user;
   });
 }
 
