@@ -1,4 +1,5 @@
 import { initializeApp } from "firebase/app";
+import { v4 as uuid } from "uuid";
 import {
   getAuth,
   signInWithPopup,
@@ -6,7 +7,7 @@ import {
   signOut,
   onAuthStateChanged,
 } from "firebase/auth";
-import { getDatabase, ref, onValue, get } from "firebase/database";
+import { getDatabase, ref, onValue, get, set } from "firebase/database";
 
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_APP_FIREBASE_API_KEY,
@@ -52,6 +53,26 @@ async function adminUser(user) {
   });
 }
 
-//✅ Firebase의 onAuthStateChanged 함수는 로그인 상태가 변경될 때마다 실행됨.
-//✅ callback이라는 함수를 인자로 받음.
-//✅ onAuthStateChanged가 로그인 상태가 변경될 때 사용자 정보(user)를 callback(user)에 전달하여 실행.
+// Firebase의 onAuthStateChanged 함수는 로그인 상태가 변경될 때마다 실행됨.
+// callback이라는 함수를 인자로 받음.
+// onAuthStateChanged가 로그인 상태가 변경될 때 사용자 정보(user)를 callback(user)에 전달하여 실행.
+
+export async function addNewProduct(product, imageURL) {
+  const id = uuid();
+  return set(ref(database, `products/${id}`), {
+    ...product,
+    id,
+    price: parseInt(product.price),
+    image: imageURL,
+    options: product.options.split(","),
+  });
+}
+
+export async function getProducts() {
+  return get(ref(database, "products")).then((snapshot) => {
+    if (snapshot.exists()) {
+      return Object.values(snapshot.val()); //snapshot이 객체로 가지고 있으니까 value들만 가지도 오는 것
+    }
+    return [];
+  });
+}
