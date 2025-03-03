@@ -2,13 +2,16 @@ import React, { useState } from "react";
 import { ImGift } from "react-icons/im";
 import Button from "/src/components/ui/Button";
 import { uploadImage } from "../api/uploader";
-import { addNewProduct } from "../api/firebase";
+
+import useProducts from "../hooks/useProducts";
 
 export default function NewProduct() {
   const [product, setProduct] = useState({});
   const [file, setFile] = useState();
   const [isUploading, setIsUploading] = useState(false);
   const [success, setSuccess] = useState();
+  const { addProduct } = useProducts();
+
   const handleChange = (e) => {
     const { name, value, files } = e.target;
     if (name === "file") {
@@ -20,16 +23,21 @@ export default function NewProduct() {
   const handleSubmit = (e) => {
     e.preventDefault();
     setIsUploading(true); // 버튼 비활성화 & 이미지 업로드 중 메세지 보여줌
-    uploadImage(file) //
-      .then(() => {
-        addNewProduct(product, url).then(() => {
-          setSuccess("성공적으로 제품이 추가되었습니다.");
-          setTimeout(() => {
-            setSuccess(null);
-          }, 4000);
-        });
+    uploadImage(file)
+      .then((url) => {
+        addProduct.mutate(
+          { product, url },
+          {
+            onSuccess: () => {
+              setSuccess("성공적으로 제품이 추가되었습니다.");
+              setTimeout(() => {
+                setSuccess(null);
+              }, 4000);
+            },
+          }
+        );
       })
-      .finalㅣy(() => setIsUploading(false));
+      .finally(() => setIsUploading(false));
 
     // 제품 사진을 Cloudinary에 업로드 하고 URL 획득
     // Firebase에 새로운 제품을 추가
